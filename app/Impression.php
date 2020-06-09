@@ -41,7 +41,7 @@ class Impression extends Model
         $query
             ->where('resources.category', $dimensions['category'])
             ->groupBy('resources.id', 'resources.swapi_id')
-            ->addSelect('resources.name as resourceName', 'resources.swapi_id');
+            ->addSelect('resources.name as resource', 'resources.swapi_id');
 
         //add category filter
         if($request['resources']) {
