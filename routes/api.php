@@ -18,8 +18,7 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-Route::pattern('swapiId', '[0-9]+');
 Route::pattern('categoryName', '[A-Za-z]+');
 
-Route::get('/{categoryName}/{swapiId}/impressions', 'ImpressionController@index');
-Route::post('/{categoryName}/{swapiId}/impressions', 'ImpressionController@store');
+Route::get('/impressions', 'ImpressionController@index');
+Route::post('/{categoryName}/impressions', 'ImpressionController@store');

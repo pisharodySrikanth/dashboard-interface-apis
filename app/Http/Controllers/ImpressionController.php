@@ -3,51 +3,54 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use App\Category;
 use App\Resource;
 use App\Impression;
 
 class ImpressionController extends Controller
 {
-    public function index() {
-        return 'returns the list';
+    public function index(Request $request) {
+        $validator = static::validateFilters($request);
+
+        if($validator->fails()) {
+            return [
+                'success' => false,
+                'msg' => 'filters are not proper'
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data' => Impression::getList($request)
+        ];
     }
 
-    public function store(Request $request, $categoryName, $swapiId) {
+    public function store(Request $request, $categoryName) {
         //validate all inputs
         $validatedFields = $request->validate([
-            'resourceName' => ['required', 'max:255']
+            'resourceName' => ['required', 'max:255', 'string'],
+            'swapiId' => ['required', 'int']
         ]);
 
         $resourceName = $validatedFields['resourceName'];
+        $swapiId = $validatedFields['swapiId'];
         
         try {
             //begin transaction
             DB::beginTransaction();
 
-            //if not exists create category
-            $category = Category::firstOrCreate([
-                'name' => $categoryName
+            //if not exists create resource
+            $resource = Resource::firstOrCreate([
+                'category' => $categoryName,
+                'swapi_id' => $swapiId
+            ], [
+                'swapi_id' => $swapiId,
+                'name' => $resourceName,
+                'category' => $categoryName
             ]);
-
-            if($category->wasRecentlyCreated) {
-                $resource = Resource::create([
-                    'swapi_id' => $swapiId,
-                    'name' => $resourceName,
-                    'category_id' => $category->id
-                    ]);
-            } else {
-                //if not exists create resource
-                $resource = Resource::firstOrCreate([
-                    'category_id' => $category->id,
-                    'swapi_id' => $swapiId
-                ], [
-                    'swapi_id' => $swapiId,
-                    'name' => $resourceName,
-                    'category_id' => $category->id
-                ]);
-            }
             
             //create impression
             $impression = Impression::create([
@@ -66,5 +69,18 @@ class ImpressionController extends Controller
                 'success' => false
             ];
         }
+    }
+
+    private static function validateFilters($request) {
+        $validator = Validator::make($request->all(), [
+            'start' => ['date_format:Y-m-d','before:end'],
+            'end' => ['date_format:Y-m-d', 'after:start'],
+            'resources' => ['array'],
+            'dimensions' => ['json', 'required']
+        ]);
+
+        //if
+
+        return $validator;
     }
 }

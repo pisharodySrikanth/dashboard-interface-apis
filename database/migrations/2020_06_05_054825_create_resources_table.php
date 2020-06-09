@@ -17,10 +17,8 @@ class CreateResourcesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('swapi_id');
             $table->string('name');
-            $table->foreignId('category_id');
+            $table->string('category');
             $table->timestamps();
-
-            $table->foreign('category_id')->references('id')->on('categories');
         });
     }
 
