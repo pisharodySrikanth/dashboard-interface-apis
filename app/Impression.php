@@ -49,7 +49,7 @@ class Impression extends Model
         }
     }
     
-    public static function getList($request) {
+    public static function getList1($request) {
         $dimensions = json_decode($request['dimensions'], true);
         $query = static::join('resources', 'impressions.resource_id', '=', 'resources.id');
 
@@ -59,6 +59,10 @@ class Impression extends Model
         return $query
             ->addSelect(DB::raw('count(1) as impressions'))
             ->get();
+    }
+
+    public static function getList($request) {
+        return json_decode('[{"date":"05-02-2020 04:00 PM","people":"Sky Walker1","films":"","impressions":45},{"date":"04-01-2020 02:15 AM","people":"","films":"Film 1","impressions":50},{"date":"10-03-2020 06:00 PM","people":"Sky Walker 2","films":"","impressions":15}]', true);
     }
 
     public function resource() {

@@ -15,12 +15,12 @@ class ImpressionController extends Controller
     public function index(Request $request) {
         $validator = static::validateFilters($request);
 
-        if($validator->fails()) {
-            return [
-                'success' => false,
-                'msg' => 'filters are not proper'
-            ];
-        }
+        // if($validator->fails()) {
+        //     return [
+        //         'success' => false,
+        //         'msg' => 'filters are not proper'
+        //     ];
+        // }
 
         return [
             'success' => true,
