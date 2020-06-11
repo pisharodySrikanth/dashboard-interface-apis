@@ -4,65 +4,126 @@ namespace App;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use App\utils\Swapi;
 
 class Impression extends Model
 {
     public $guarded = [];
 
-    private static function addDateParams($query, $dimensions, $request) {
-        $dateFormatMap = [
-            'hour' => '%d-%m-%Y %h:00:00',
-            'day' => '%d-%m-%Y'
-        ];
+    private static $dateFormatMap = [
+        'hour' => '%d-%m-%Y %h:00:00',
+        'day' => '%d-%m-%Y'
+    ];
 
-        if(!array_key_exists('date', $dimensions) || !array_key_exists($dimensions['date'], $dateFormatMap)) {
-            return;
+    private static function getDateFormatStr($dateType) {
+        if(!array_key_exists($dateType, static::$dateFormatMap)) {
+            return null;
         }
 
-        //adding date dimension
-        $dateFormatStr = "DATE_FORMAT(impressions.created_at, \"{$dateFormatMap[$dimensions['date']]}\")";
+        return 'DATE_FORMAT(impressions.created_at, "'.static::$dateFormatMap[$dateType].'")';
+    }
 
-        $query
-            ->groupBy(DB::raw($dateFormatStr))
-            ->addSelect(DB::raw("{$dateFormatStr} as date"));
-            
-        //add date filter
-        if($request['start'] && $request['end']) {
-            $query->whereBetween('impressions.created_at', [$request['start'], $request['end']]);
+    public static function addDimensions($query, $dimensions) {
+        $dateType = $dimensions['dateType'];
+        $otherDimensions = $dimensions['dimensions'];
+        
+        if(!empty($dateType)) {
+            $dateFormat = static::getDateFormatStr($dateType);
+            if($dateFormat) {
+                $query
+                    ->groupBy(DB::raw($dateFormat))
+                    ->addSelect(DB::raw("{$dateFormat} as date"));
+            }
+        }
+
+        if(!empty($otherDimensions)) {
+            $query
+                ->addSelect("resources.name as {$otherDimensions[0]}")
+                ->groupBy('resources.category', 'resources.swapi_id', 'resources.name')
+                ->where('resources.category', $otherDimensions[0]);
         }
     }
 
-    private static function addCategoryParams($query, $dimensions, $request) {
-        if(!array_key_exists('category', $dimensions)) {
-            return;
+    private static function addFilter($query, $filters, $dimensions) {
+        $start = '';
+        $end = '';
+        $otherFilters = [];
+
+        //separating date and categories
+        foreach($filters as $key => $val) {
+            switch($key) {
+                case 'start':
+                    $start = $val;
+                break;
+                case 'end':
+                    $end = $val;
+                break;
+                default:
+                    $otherFilters[$key] = $val;
+                break;
+            }
         }
 
-        //adding category dimension
-        $query
-            ->where('resources.category', $dimensions['category'])
-            ->groupBy('resources.id', 'resources.swapi_id')
-            ->addSelect('resources.name as resource', 'resources.swapi_id');
-
-        //add category filter
-        if($request['resources']) {
-            $query->whereIn('resources.swapi_id', $request['resources']);
+        $query->where('impressions.created_at', '>=', $start);
+        
+        if(!empty($end)) {
+            $query->where('impressions.created_at', '<=', $end);
         }
+
+        if(!empty($otherFilters)) {
+            $swapiIds = Swapi::getQualifiedIds($otherFilters, $dimensions['dimensions']);
+
+            $query->where(function($query) use (&$swapiIds) {
+                foreach($swapiIds  as $key => $val) {
+                    $query->orWhere(function($query) use(&$key, &$val) {
+                        $query
+                            ->where('resources.category', $key)
+                            ->whereIn('resources.swapi_id', $val);
+                    });
+                }
+            });
+        }
+    }
+
+    public static function segregateDimensions($dimensions) {
+        $dateType = '';
+        $otherDimensions = [];
+
+        //separating date from other dimensions
+        foreach($dimensions as $val) {
+            if(array_key_exists($val, static::$dateFormatMap)) {
+                if(empty($dateType)) {
+                    $dateType = $val;
+                }
+            } else {
+                $otherDimensions[] = $val;
+            }
+        }
+
+        return [
+            'dateType' => $dateType,
+            'dimensions' => $otherDimensions
+        ];
     }
     
-    public static function getList1($request) {
-        $dimensions = json_decode($request['dimensions'], true);
+    public static function getList($request) {
         $query = static::join('resources', 'impressions.resource_id', '=', 'resources.id');
 
-        static::addDateParams($query, $dimensions, $request);
-        static::addCategoryParams($query, $dimensions, $request);
+        $queryParams = $request->all();
+
+        $dimensions = $queryParams['dimensions'];
+        $segregatedDimensions = static::segregateDimensions($dimensions);
+
+        //removing dimensions so that only filters remain
+        unset($queryParams['dimensions']);
+
+        static::addDimensions($query, $segregatedDimensions);
+        static::addFilter($query, $queryParams, $segregatedDimensions);
 
         return $query
             ->addSelect(DB::raw('count(1) as impressions'))
+            ->orderBy('impressions', 'desc')
             ->get();
-    }
-
-    public static function getList($request) {
-        return json_decode('[{"date":"05-02-2020 04:00 PM","people":"Sky Walker1","films":"","impressions":45},{"date":"04-01-2020 02:15 AM","people":"","films":"Film 1","impressions":50},{"date":"10-03-2020 06:00 PM","people":"Sky Walker 2","films":"","impressions":15}]', true);
     }
 
     public function resource() {

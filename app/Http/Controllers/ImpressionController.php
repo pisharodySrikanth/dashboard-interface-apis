@@ -15,12 +15,12 @@ class ImpressionController extends Controller
     public function index(Request $request) {
         $validator = static::validateFilters($request);
 
-        // if($validator->fails()) {
-        //     return [
-        //         'success' => false,
-        //         'msg' => 'filters are not proper'
-        //     ];
-        // }
+        if($validator->fails()) {
+            return [
+                'success' => false,
+                'msg' => 'filters are not proper'
+            ];
+        }
 
         return [
             'success' => true,
@@ -73,13 +73,10 @@ class ImpressionController extends Controller
 
     private static function validateFilters($request) {
         $validator = Validator::make($request->all(), [
-            'start' => ['date_format:Y-m-d','before:end'],
+            'start' => ['date_format:Y-m-d','before:end', 'required'],
             'end' => ['date_format:Y-m-d', 'after:start'],
-            'resources' => ['array'],
-            'dimensions' => ['json', 'required']
+            'dimensions' => ['array', 'required']
         ]);
-
-        //if
 
         return $validator;
     }
