@@ -6,14 +6,17 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use App\Category;
 use App\Resource;
 use App\Impression;
 
 class ImpressionController extends Controller
 {
     public function index(Request $request) {
-        $validator = static::validateFilters($request);
+        $validator = Validator::make($request->all(), [
+            'start' => ['date_format:Y-m-d','before:end', 'required'],
+            'end' => ['date_format:Y-m-d', 'after:start'],
+            'dimensions' => ['array', 'required']
+        ]);
 
         if($validator->fails()) {
             return [
@@ -69,15 +72,5 @@ class ImpressionController extends Controller
                 'success' => false
             ];
         }
-    }
-
-    private static function validateFilters($request) {
-        $validator = Validator::make($request->all(), [
-            'start' => ['date_format:Y-m-d','before:end', 'required'],
-            'end' => ['date_format:Y-m-d', 'after:start'],
-            'dimensions' => ['array', 'required']
-        ]);
-
-        return $validator;
     }
 }

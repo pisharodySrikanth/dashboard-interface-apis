@@ -5,30 +5,18 @@ namespace App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use App\utils\Swapi;
+use App\utils\DateFormat;
 
 class Impression extends Model
 {
     public $guarded = [];
-
-    private static $dateFormatMap = [
-        'hour' => '%d-%m-%Y %h:00:00',
-        'day' => '%d-%m-%Y'
-    ];
-
-    private static function getDateFormatStr($dateType) {
-        if(!array_key_exists($dateType, static::$dateFormatMap)) {
-            return null;
-        }
-
-        return 'DATE_FORMAT(impressions.created_at, "'.static::$dateFormatMap[$dateType].'")';
-    }
 
     public static function addDimensions($query, $dimensions) {
         $dateType = $dimensions['dateType'];
         $otherDimensions = $dimensions['dimensions'];
         
         if(!empty($dateType)) {
-            $dateFormat = static::getDateFormatStr($dateType);
+            $dateFormat = 'DATE_FORMAT(impressions.created_at, "'.DateFormat::getFormat($dateType).'")';
             if($dateFormat) {
                 $query
                     ->groupBy(DB::raw($dateFormat))
@@ -88,10 +76,11 @@ class Impression extends Model
     public static function segregateDimensions($dimensions) {
         $dateType = '';
         $otherDimensions = [];
+        $formatKeys = DateFormat::getFormatKeys();
 
         //separating date from other dimensions
         foreach($dimensions as $val) {
-            if(array_key_exists($val, static::$dateFormatMap)) {
+            if(in_array($val, $formatKeys)) {
                 if(empty($dateType)) {
                     $dateType = $val;
                 }

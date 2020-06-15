@@ -21,4 +21,5 @@ use Illuminate\Support\Facades\Route;
 Route::pattern('categoryName', '[A-Za-z]+');
 
 Route::get('/impressions', 'ImpressionController@index');
+Route::get('/{categoryName}/resources', 'ResourceController@index');
 Route::post('/{categoryName}/impressions', 'ImpressionController@store');
