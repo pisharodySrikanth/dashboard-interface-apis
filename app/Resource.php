@@ -43,7 +43,7 @@ class Resource extends Model
         //returning resources with impressions > 0
         return $resources->filter(function($r) {
             return count($r['impressions']) > 0;
-        });
+        })->values();
     }
 
     public function impressions() {
