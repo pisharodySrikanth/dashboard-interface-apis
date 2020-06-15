@@ -7,7 +7,7 @@ class Swapi {
         'people' => ['species', 'vehicles']
     ];
 
-    private static function fetch($resource, $id=null) {
+    public static function fetch($resource, $id=null) {
         $client = new \GuzzleHttp\Client();
 
         $url = "https://swapi.dev/api/{$resource}/";
@@ -22,7 +22,7 @@ class Swapi {
         return $response['results'];
     }
 
-    private static function getIdFromUrl($dimension, $url) {
+    public static function getIdFromUrl($dimension, $url) {
         $id = '';
         $matches = [];
         $regex = "/http(s)?:\/\/swapi.dev\/api\/{$dimension}\/(?P<digit>\d+)/";
