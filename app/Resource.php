@@ -25,7 +25,8 @@ class Resource extends Model
         $query
             ->groupBy(DB::raw($dateStr), 'resource_id')
             ->addSelect('resource_id')
-            ->addSelect(DB::raw("{$dateStr} as date"), DB::raw('COUNT(1) as impressions'));
+            ->addSelect(DB::raw("{$dateStr} as date"), DB::raw('COUNT(1) as impressions'))
+            ->orderBy('date');
 
     }
 
