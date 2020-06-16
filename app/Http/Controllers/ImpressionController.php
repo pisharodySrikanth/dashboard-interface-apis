@@ -12,11 +12,22 @@ use App\Impression;
 class ImpressionController extends Controller
 {
     public function index(Request $request) {
-        $validator = Validator::make($request->all(), [
+        $params = $request->all();
+
+        $rules = [
             'start' => ['date_format:Y-m-d','before:end', 'required'],
             'end' => ['date_format:Y-m-d', 'after:start'],
             'dimensions' => ['array', 'required']
-        ]);
+        ];
+
+        //adding rules for filters
+        foreach($params as $key=>$val) {
+            if(!array_key_exists($key, $rules)) {
+                $rules[$key] = ['json', 'string'];
+            }
+        }
+    
+        $validator = Validator::make($params, $rules);
 
         if($validator->fails()) {
             return [

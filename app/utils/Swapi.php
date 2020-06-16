@@ -17,6 +17,12 @@ class Swapi {
 
         $res = $client->request('GET', $url);
 
+        $statusCode = $res->getStatusCode();
+
+        if($statusCode !== 200) {
+            return null;
+        }
+
         $response = \json_decode((string)$res->getBody(), true);
 
         return $response['results'];
@@ -72,19 +78,30 @@ class Swapi {
     }
 
     public static function getQualifiedIds($filters, $dimensions) {
-        $categories;
+        $categories = [];
         $result = [];
+
+        //if no dimensions, filter keys will go in where clause
+        if(empty($dimensions)) {
+            foreach($filters as $key => $val) {
+                $decoded = json_decode($val, true);
+                $values = array_key_exists('value', $decoded) ? $decoded['value'] : [];
+                $result[$key] = $values;
+            }
+
+            return $result;
+        }
 
         //fetch all dimension categories
         foreach($dimensions as $key) {
-            $categories[$key] = static::fetch($key);
+            $response = static::fetch($key);
+            $categories[$key] = empty($response) ? [] : $response;
         }
 
         //find qualified ids for each dimensions based on filters
         foreach($dimensions as $d) {
             $result[$d] = static::getFilteredIds($d, $categories, $filters);
         }
-
 
         // get qualified ids for each dimension
         return $result;

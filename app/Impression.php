@@ -16,18 +16,19 @@ class Impression extends Model
         $otherDimensions = $dimensions['dimensions'];
         
         if(!empty($dateType)) {
-            $dateFormat = 'DATE_FORMAT(impressions.created_at, "'.DateFormat::getFormat($dateType).'")';
+            $dateFormat = DateFormat::getFormat($dateType);
             if($dateFormat) {
+                $dateFormatStr = 'DATE_FORMAT(impressions.created_at, "'.$dateFormat.'")';
                 $query
-                    ->groupBy(DB::raw($dateFormat))
-                    ->addSelect(DB::raw("{$dateFormat} as date"));
+                    ->groupBy(DB::raw($dateFormatStr))
+                    ->addSelect(DB::raw("{$dateFormatStr} as date"));
             }
         }
 
         if(!empty($otherDimensions)) {
             $query
                 ->addSelect("resources.name as {$otherDimensions[0]}")
-                ->groupBy('resources.category', 'resources.swapi_id', 'resources.name')
+                ->groupBy('resources.name')
                 ->where('resources.category', $otherDimensions[0]);
         }
     }
